@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # 1. The Next.js Interface
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: attentionos-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - attentionos-network
+
+  # 2. The Express/TypeScript Engine API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: attentionos-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGO_URI=mongodb://mongodb:27017/attentionos
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - attentionos-network
+
+  # 3. Telemetry Database
+  mongodb:
+    image: mongo:latest
+    container_name: attentionos-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - attentionos-network
+
+  # 4. High-Speed Cache
+  redis:
+    image: redis:alpine
+    container_name: attentionos-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - attentionos-network
+
+networks:
+  attentionos-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
