@@ -6,11 +6,14 @@
     "start": "node build/server.js"
   },
   "dependencies": {
+    "@tensorflow/tfjs-node": "^4.22.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "jimp": "^1.6.0",
     "mongoose": "^9.3.0",
-    "redis": "^5.11.0"
+    "redis": "^5.11.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+import Script from 'next/script'
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -24,6 +24,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Load MediaPipe FaceMesh via CDN */}
+        <Script 
+          src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" 
+          strategy="beforeInteractive" 
+        />
+        {/* The helper that handles the camera-to-model pipeline */}
+        <Script 
+          src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" 
+          strategy="beforeInteractive" 
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
