@@ -3,7 +3,9 @@ import { useFocusStore } from '@/store/useFocusStore';
 import { FogOfWar } from './FogOfWar';
 
 interface AdaptiveReaderProps {
-  content: string;
+  content?: string;
+  fileUrl?: string;
+  fileType?: string;
   enableGazeScroll?: boolean;
   enableSmartHighlighting?: boolean;
   enableReadingSpeedAdaptation?: boolean;
@@ -11,18 +13,19 @@ interface AdaptiveReaderProps {
 }
 
 export function AdaptiveReader({
-  content,
-  enableGazeScroll = true,
-  enableSmartHighlighting = true,
-  enableReadingSpeedAdaptation = true,
-  enableBreakReminders = true
+  content = "",
+  fileUrl,
+  fileType,
+  enableGazeScroll = false,
+  enableSmartHighlighting = false,
+  enableReadingSpeedAdaptation = false,
+  enableBreakReminders = false,
 }: AdaptiveReaderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [highlightedSections, setHighlightedSections] = useState<Set<number>>(new Set());
 
-  // State from store
   const { isFocused, faceDetected, gazeHeatmap, focusScore, triggerAlert, isDrowsy } = useFocusStore();
 
   // Break reminder logic
@@ -35,69 +38,27 @@ export function AdaptiveReader({
       }
     };
 
-    const interval = setInterval(checkBreakTime, 120000); // Check every 2 minutes
+    const interval = setInterval(checkBreakTime, 120000);
     return () => clearInterval(interval);
   }, [isDrowsy, enableBreakReminders, faceDetected, triggerAlert]);
 
-  // // Gaze-aware scroll control
-  // useEffect(() => {
-  //   if (!enableGazeScroll || !faceDetected || !isFocused || !containerRef.current) return;
+  // Scroll progress tracking
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-  //   const container = containerRef.current;
-  //   const content = contentRef.current;
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const progress = scrollHeight > clientHeight
+        ? (scrollTop / (scrollHeight - clientHeight)) * 100
+        : 0;
+      setScrollProgress(progress);
+    };
 
-  //   if (!content) return;
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
 
-  //   // Calculate scroll progress based on gaze position
-  //   const handleGazeScroll = () => {
-  //     if (gazeHeatmap.length === 0) return;
-
-  //     // Get average gaze Y position from recent gaze points
-  //     const recentGaze = gazeHeatmap.slice(-10);
-  //     const avgY = recentGaze.reduce((sum, g) => sum + g.y, 0) / recentGaze.length;
-
-  //     // If gaze is at bottom of screen (y > 0.8), scroll down
-  //     if (avgY > 0.8) {
-  //       const scrollAmount = Math.min(50, content.scrollHeight - container.scrollTop - container.clientHeight);
-  //       container.scrollTop += scrollAmount;
-  //     } 
-  //     // If gaze is at top of screen (y < 0.2), scroll up
-  //     else if (avgY < 0.2) {
-  //       const scrollAmount = Math.min(50, container.scrollTop);
-  //       container.scrollTop -= scrollAmount;
-  //     }
-
-  //     setScrollProgress(container.scrollTop / (content.scrollHeight - container.clientHeight) * 100);
-  //   };
-
-  //   // Throttle gaze scroll updates
-  //   const throttledScroll = throttle(handleGazeScroll, 500);
-
-  //   const interval = setInterval(throttledScroll, 1000);
-  //   return () => clearInterval(interval);
-  // }, [gazeHeatmap, enableGazeScroll, faceDetected, isFocused]);
-
-  // // Smart text highlighting based on gaze
-  // useEffect(() => {
-  //   if (!enableSmartHighlighting || !faceDetected || gazeHeatmap.length === 0) return;
-
-  //   const content = contentRef.current;
-  //   if (!content) return;
-
-  //   // Analyze gaze clusters to find areas of focus
-  //   const clusters = clusterGazePoints(gazeHeatmap);
-  //   const newHighlights = new Set<number>();
-
-  //   clusters.forEach((cluster, index) => {
-  //     if (cluster.size >= 5) { // Significant focus area
-  //       newHighlights.add(index);
-  //     }
-  //   });
-
-  //   setHighlightedSections(newHighlights);
-  // }, [gazeHeatmap, enableSmartHighlighting, faceDetected]);
-
-  // Cluster gaze points for highlighting
   const clusterGazePoints = (points: Array<{ x: number; y: number; weight: number; timestamp: number }>) => {
     const clusters: Array<{
       centerX: number;
@@ -108,13 +69,11 @@ export function AdaptiveReader({
 
     points.forEach(point => {
       let assigned = false;
-
       for (const cluster of clusters) {
         const distance = Math.sqrt(
           Math.pow(point.x - cluster.centerX, 2) +
           Math.pow(point.y - cluster.centerY, 2)
         );
-
         if (distance < 0.1) {
           cluster.size++;
           cluster.points.push({ x: point.x, y: point.y });
@@ -124,7 +83,6 @@ export function AdaptiveReader({
           break;
         }
       }
-
       if (!assigned) {
         clusters.push({
           centerX: point.x,
@@ -134,11 +92,9 @@ export function AdaptiveReader({
         });
       }
     });
-
     return clusters;
   };
 
-  // Utility function to throttle function calls
   const throttle = (func: Function, delay: number) => {
     let lastCall = 0;
     return (...args: any[]) => {
@@ -150,23 +106,19 @@ export function AdaptiveReader({
     };
   };
 
-  // Process content for highlighting
   const processContent = (content: string) => {
-    // Split content into paragraphs
     const paragraphs = content.split('\n\n');
-
     return paragraphs.map((paragraph, index) => {
       const isHighlighted = highlightedSections.has(index);
-
       return (
         <p
           key={index}
           className={`mb-4 leading-relaxed transition-all duration-500 ${isHighlighted
-              ? 'bg-gradient-to-r from-sky-500/10 to-transparent p-3 rounded-lg border border-sky-500/30 shadow-lg'
-              : 'text-slate-300'
+              ? 'border-l-2 border-[#00E5FF]/50 pl-4 text-white/80'
+              : 'text-white/50'
             }`}
           style={{
-            filter: isHighlighted ? 'brightness(1.1)' : 'none'
+            textShadow: isHighlighted ? '0 0 30px rgba(0,229,255,0.05)' : 'none'
           }}
         >
           {paragraph}
@@ -183,21 +135,21 @@ export function AdaptiveReader({
     >
       <div
         ref={containerRef}
-        className="relative max-w-2xl mx-auto h-[600px] overflow-y-auto scroll-smooth"
+        className="relative max-w-2xl mx-auto max-h-[calc(100vh-200px)] overflow-y-auto scroll-smooth glass-panel rounded-2xl"
         style={{
           scrollBehavior: enableGazeScroll ? 'smooth' : 'auto'
         }}
       >
         {/* Reading Progress Bar */}
-        <div className="sticky top-0 z-50 bg-gradient-to-b from-slate-900/80 to-transparent p-4 backdrop-blur-sm">
-          <div className="flex justify-between items-center text-sm text-slate-400 mb-2">
+        <div className="sticky top-0 z-50 p-4" style={{ background: 'linear-gradient(to bottom, rgba(10,12,16,0.9), transparent)' }}>
+          <div className="flex justify-between items-center text-xs text-white/25 mb-2 font-medium">
             <span>Reading Progress</span>
-            <span>{Math.round(scrollProgress)}%</span>
+            <span className="font-mono">{Math.round(scrollProgress)}%</span>
           </div>
-          <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+          <div className="neon-progress-track h-1">
             <div
-              className="h-full bg-gradient-to-r from-sky-500 to-orange-500 transition-all duration-300"
-              style={{ width: `${scrollProgress}%` }}
+              className="neon-progress-fill-cyan"
+              style={{ width: `${scrollProgress}%`, height: '100%' }}
             />
           </div>
         </div>
@@ -205,20 +157,22 @@ export function AdaptiveReader({
         {/* Content Area */}
         <div
           ref={contentRef}
-          className="p-8 prose prose-invert prose-slate max-w-none"
+          className={`${fileType === 'pdf' ? 'w-full h-full min-h-[600px]' : 'p-8 pt-2 prose prose-invert prose-slate max-w-none'}`}
           style={{
-            filter: faceDetected && !isFocused ? 'blur(2px) grayscale(0.3)' : 'none',
+            filter: faceDetected && !isFocused ? 'blur(3px) grayscale(0.3)' : 'none',
             transition: 'filter 0.5s ease-in-out'
           }}
         >
-          {processContent(content)}
+          {fileType === 'pdf' && fileUrl ? (
+            <iframe 
+              src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
+              className="w-full h-full min-h-[600px] rounded-b-xl border-none" 
+              title="Document Viewer"
+            />
+          ) : (
+            processContent(content || "")
+          )}
         </div>
-
-        {/* Gaze Heatmap Overlay Removed */}
-
-        {/* Reading Tips Removed for Simpler UI */}
-
-        {/* Break Reminder */}
       </div>
     </FogOfWar>
   );
@@ -230,9 +184,7 @@ export function MultiFormatReader({
   contentType = 'text',
   ...props
 }: AdaptiveReaderProps & { contentType?: 'text' | 'markdown' | 'pdf' | 'web' }) {
-
-  const processedContent = processContentByType(content, contentType);
-
+  const processedContent = processContentByType(content || "", contentType);
   return (
     <AdaptiveReader
       {...props}
@@ -241,11 +193,9 @@ export function MultiFormatReader({
   );
 }
 
-// Content processor for different formats
 const processContentByType = (content: string, type: string) => {
   switch (type) {
     case 'markdown':
-      // Simple markdown processing
       return content
         .replace(/^### (.+)$/gm, '<h3>$1</h3>')
         .replace(/^## (.+)$/gm, '<h2>$1</h2>')
@@ -253,15 +203,10 @@ const processContentByType = (content: string, type: string) => {
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         .replace(/`(.*?)`/g, '<code>$1</code>');
-
     case 'pdf':
-      // PDF content processing (simplified)
       return content.replace(/\s+/g, ' ').trim();
-
     case 'web':
-      // Web content processing
       return content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-
     default:
       return content;
   }

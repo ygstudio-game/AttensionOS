@@ -1,45 +1,47 @@
 "use client"
 import { useFocusStore } from "@/store/useFocusStore"
-import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 
 export function FocusMeter() {
   const { focusScore, isFocused, faceDetected } = useFocusStore()
 
   return (
-    <div className="w-72 p-5 bg-slate-900/90 border border-slate-800 rounded-xl backdrop-blur-xl shadow-2xl">
+    <div className="w-64 p-4 glass-panel rounded-2xl">
       <div className="flex justify-between items-center mb-3">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] font-bold text-white/25 uppercase tracking-[0.2em]">
             Attention Engine
           </span>
           <span className={cn(
-            "text-sm font-black transition-colors duration-300",
-            isFocused ? "text-sky-400" : "text-orange-500"
+            "text-xs font-black tracking-wide transition-all duration-500",
+            isFocused ? "text-[#00E5FF] text-glow-cyan" : "text-[#FF3B5C] text-glow-red"
           )}>
             {faceDetected ? (isFocused ? "DEEP FOCUS" : "DISTRACTED") : "SEARCHING..."}
           </span>
         </div>
         <div className="text-right">
-          <span className="text-2xl font-mono font-bold text-slate-100">
-            {focusScore}<span className="text-xs text-slate-500">%</span>
+          <span className="text-2xl font-mono font-bold text-white/90">
+            {focusScore}<span className="text-xs text-white/25 ml-0.5">%</span>
           </span>
         </div>
       </div>
 
-      <Progress 
-        value={focusScore} 
-        className="h-1.5 bg-slate-800" 
-        // Note: shadcn progress doesn't support custom indicator colors easily via props, 
-        // so ensure your global.css handles the transition or use inline styles.
-      />
+      {/* Neon Progress Bar */}
+      <div className="neon-progress-track h-1">
+        <div
+          className={isFocused ? "neon-progress-fill-cyan" : "neon-progress-fill-red"}
+          style={{ width: `${focusScore}%`, height: '100%' }}
+        />
+      </div>
 
-      <div className="mt-4 flex gap-2 items-center">
+      <div className="mt-3 flex gap-2 items-center">
         <div className={cn(
-          "w-2 h-2 rounded-full animate-pulse",
-          faceDetected ? "bg-green-500" : "bg-red-500"
-        )} />
-        <span className="text-[10px] text-slate-400 font-medium">
+          "w-1.5 h-1.5 rounded-full animate-pulse",
+          faceDetected ? "bg-[#00E5FF]" : "bg-[#FF3B5C]"
+        )}
+          style={faceDetected ? { boxShadow: '0 0 6px rgba(0,229,255,0.6)' } : { boxShadow: '0 0 6px rgba(255,59,92,0.6)' }}
+        />
+        <span className="text-[10px] text-white/25 font-medium">
           {faceDetected ? "Biometric Stream Active" : "No Face Detected"}
         </span>
       </div>
