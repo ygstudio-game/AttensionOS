@@ -29,14 +29,14 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Load MediaPipe FaceMesh via CDN */}
-        <Script 
-          src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" 
-          strategy="beforeInteractive" 
+        <Script
+          src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"
+          strategy="beforeInteractive"
         />
-        {/* The helper that handles the camera-to-model pipeline */}
-        <Script 
-          src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" 
-          strategy="beforeInteractive" 
+        {/* The helper that handles the camera-to-model pipeline.. */}
+        <Script
+          src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"
+          strategy="beforeInteractive"
         />
       </head>
       <body
