@@ -22,7 +22,7 @@ export default function HomePage() {
         <section className="relative text-center w-full min-h-[85vh] flex flex-col items-center justify-center overflow-hidden mb-36 border-b border-white/5">
           {/* Liquid Ether Background */}
           <div className="absolute inset-0 z-0 pointer-events-none opacity-80">
-            <LiquidEtherClient 
+            <LiquidEtherClient
               mouseForce={25}
               cursorSize={100}
               colors={['#06d8f4', '#00e1ff', '#00d5ff']}
@@ -58,9 +58,7 @@ export default function HomePage() {
                 Get Started with FocusLens
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <button className="glass-panel px-8 py-4 rounded-2xl font-bold text-lg text-white/90 hover:text-white hover:border-white/30 backdrop-blur-xl transition-all duration-300 border border-white/10 bg-white/5 hover:bg-white/10 shadow-lg">
-                Watch Demo
-              </button>
+
             </div>
           </div>
         </section>
@@ -111,34 +109,34 @@ export default function HomePage() {
         {/* Privacy Section */}
         <div className="max-w-7xl mx-auto px-8">
           <section id="privacy" className="glass-panel-strong p-12 text-center relative overflow-hidden rounded-[2rem]">
-          {/* Accent glow line */}
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#00E5FF]/60 to-transparent" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-20 bg-[#00E5FF]/10 blur-[60px] rounded-full" />
+            {/* Accent glow line */}
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#00E5FF]/60 to-transparent" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-20 bg-[#00E5FF]/10 blur-[60px] rounded-full" />
 
-          <div className="relative z-10">
-            <Shield className="w-8 h-8 text-[#00E5FF]/60 mx-auto mb-6" />
-            <h2 className="text-3xl md:text-4xl font-black mb-6">Zero Video Data Transmission</h2>
-            <p className="text-white/35 text-lg max-w-3xl mx-auto leading-relaxed mb-10">
-              AttentionOS processes all video telemetry{' '}
-              <span className="text-white/80 font-semibold">locally in your browser</span>.
-              We never send your video feed to any server, guaranteeing complete user privacy.
-            </p>
+            <div className="relative z-10">
+              <Shield className="w-8 h-8 text-[#00E5FF]/60 mx-auto mb-6" />
+              <h2 className="text-3xl md:text-4xl font-black mb-6">Zero Video Data Transmission</h2>
+              <p className="text-white/35 text-lg max-w-3xl mx-auto leading-relaxed mb-10">
+                AttentionOS processes all video telemetry{' '}
+                <span className="text-white/80 font-semibold">locally in your browser</span>.
+                We never send your video feed to any server, guaranteeing complete user privacy.
+              </p>
 
-            <div className="flex justify-center gap-16">
-              {[
-                { label: "Client Side", sub: "No WebSockets" },
-                { label: "WASM Powered", sub: "Native Perf" },
-                { label: "Zero Trust", sub: "Security Built-in" },
-              ].map((item, i) => (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <span className="text-xs uppercase tracking-[0.2em] font-bold text-white/30">{item.label}</span>
-                  <span className="text-[10px] text-white/15">{item.sub}</span>
-                </div>
-              ))}
+              <div className="flex justify-center gap-16">
+                {[
+                  { label: "Client Side", sub: "No WebSockets" },
+                  { label: "WASM Powered", sub: "Native Perf" },
+                  { label: "Zero Trust", sub: "Security Built-in" },
+                ].map((item, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <span className="text-xs uppercase tracking-[0.2em] font-bold text-white/30">{item.label}</span>
+                    <span className="text-[10px] text-white/15">{item.sub}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
-      </div>
+          </section>
+        </div>
       </main>
 
       {/* Footer */}

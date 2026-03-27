@@ -42,7 +42,7 @@ export default function SmartMediaPausePage() {
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.1] drop-shadow-2xl">
             Introducing <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A855F7] via-[#00B4D8] to-[#00E5FF] drop-shadow-lg">
-              Smart Media Pause
+              AutoPause
             </span>
           </h1>
 

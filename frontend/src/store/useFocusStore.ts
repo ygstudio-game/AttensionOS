@@ -44,6 +44,7 @@ interface AttentionState {
   
   // --- Module Settings ---
   isSmartMediaPauseEnabled: boolean;
+  isEyeCareEnabled: boolean;
 
   customAudioFiles: {
     low_focus?: string;
@@ -73,6 +74,7 @@ interface AttentionState {
   
   toggleSmartMediaPause: () => void;
   toggleFocusLens: () => void;
+  toggleEyeCare: () => void;
   
 
   setSmartMediaRewindAmount: (seconds: number) => void;
@@ -112,6 +114,7 @@ export const useFocusStore = create<AttentionState>((set, get) => ({
   lastAlertTime: 0,
   distractedSince: null,
   isSmartMediaPauseEnabled: true,
+  isEyeCareEnabled: true,
   customAudioFiles: {},
 
   updateFromEngine: throttle((results) => {
@@ -207,6 +210,7 @@ export const useFocusStore = create<AttentionState>((set, get) => ({
   toggleSpeech: () => set((state) => ({ isSpeechEnabled: !state.isSpeechEnabled })),
   toggleSmartMediaPause: () => set((state) => ({ isSmartMediaPauseEnabled: !state.isSmartMediaPauseEnabled })),
   toggleFocusLens: () => set((state) => ({ isFocusLensEnabled: !state.isFocusLensEnabled })),
+  toggleEyeCare: () => set((state) => ({ isEyeCareEnabled: !state.isEyeCareEnabled })),
 
 
   setSmartMediaRewindAmount: (seconds) => set({ smartMediaRewindAmount: seconds }),

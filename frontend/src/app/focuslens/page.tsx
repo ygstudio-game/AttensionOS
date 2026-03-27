@@ -6,8 +6,9 @@ import { FocusMeter } from "@/components/focuslens/FocusMeter";
 import { AdaptiveReader } from "@/components/focuslens/AdaptiveReader";
 import { AnalyticsDashboard } from "@/components/focuslens/AnalyticsDashboard";
 import { CompactAnalyticsWidget } from "@/components/focuslens/AnalyticsDashboard";
-import { BarChart3, Mic, MicOff, Volume2, VolumeX, UploadCloud, FileText, Square } from "lucide-react";
+import { BarChart3, Mic, MicOff, Volume2, VolumeX, UploadCloud, FileText, Square, RotateCcw } from "lucide-react";
 import { extractTextFromFile } from "@/lib/utils/documentParser";
+import { Navbar } from "@/components/layout/Navbar";
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 
 export default function FocusLensPage() {
@@ -22,7 +23,7 @@ export default function FocusLensPage() {
   const isFocused = useFocusStore(s => s.isFocused);
   const resetSession = useFocusStore(s => s.resetSession);
   const [textContent, setTextContent] = useState<string | null>(null);
-  
+
   // Session States: 'upload' -> 'ready' (doc selected) -> 'active' (started) -> 'completed'
   const [sessionState, setSessionState] = useState<'upload' | 'ready' | 'active' | 'completed'>('upload');
   const sessionActiveRef = useRef(false);
@@ -35,12 +36,12 @@ export default function FocusLensPage() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     setIsExtracting(true);
     setFileName(file.name);
     try {
       const type = file.name.split('.').pop()?.toLowerCase() || 'txt';
-      
+
       if (type === 'pdf') {
         const url = URL.createObjectURL(file);
         setFileUrl(url);
@@ -72,7 +73,7 @@ export default function FocusLensPage() {
     setSessionState('completed');
     setShowAnalytics(true);
     sessionActiveRef.current = false;
-    
+
     if (videoRef.current?.srcObject) {
       (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
     }
@@ -173,6 +174,9 @@ export default function FocusLensPage() {
     <div className={`relative min-h-screen bg-[#0A0C10] overflow-y-auto dot-grid ${!isFocused ? 'edge-vignette-red' : ''}`}
       style={{ transition: 'box-shadow 0.7s ease-in-out', fontFamily: 'var(--font-sans), system-ui, sans-serif' }}
     >
+      {/* Navbar */}
+      <Navbar />
+
       {/* Ambient glow behind content */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="ambient-orb-cyan animate-subtle-drift" style={{ top: '10%', left: '30%', opacity: 0.5 }} />
@@ -201,22 +205,20 @@ export default function FocusLensPage() {
       <div className="fixed bottom-5 right-5 z-50 flex gap-2">
         <button
           onClick={() => toggleSpeech()}
-          className={`glass-panel flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-            isSpeechEnabled
-              ? 'border-[#00E5FF]/30 text-[#00E5FF]'
-              : 'text-white/30 hover:text-white/50'
-          }`}
+          className={`glass-panel flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${isSpeechEnabled
+            ? 'border-[#00E5FF]/30 text-[#00E5FF]'
+            : 'text-white/30 hover:text-white/50'
+            }`}
         >
           {isSpeechEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
           <span className="hidden sm:inline">{isSpeechEnabled ? 'Speech' : 'Muted'}</span>
         </button>
         <button
           onClick={handleToggleAudio}
-          className={`glass-panel flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-            isAudioMuted
-              ? 'border-[#FF3B5C]/30 text-[#FF3B5C]'
-              : 'border-[#22D3A7]/20 text-[#22D3A7]'
-          }`}
+          className={`glass-panel flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${isAudioMuted
+            ? 'border-[#FF3B5C]/30 text-[#FF3B5C]'
+            : 'border-[#22D3A7]/20 text-[#22D3A7]'
+            }`}
         >
           {isAudioMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           <span className="hidden sm:inline">{isAudioMuted ? 'Muted' : 'Audio'}</span>
@@ -224,15 +226,14 @@ export default function FocusLensPage() {
       </div>
 
       {/* Right Side UI — Top-Right Stack */}
-      <div className="fixed top-5 right-5 z-50 flex flex-col gap-3 items-end pointer-events-none">
+      <div className="fixed top-18 right-5 z-50 flex flex-col gap-3 items-end pointer-events-none">
         {/* Analytics Toggle */}
         <button
           onClick={handleToggleAnalytics}
-          className={`pointer-events-auto glass-panel flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-            showAnalytics
-              ? 'border-[#00E5FF]/30 text-[#00E5FF] glow-cyan'
-              : 'text-white/40 hover:text-white/60'
-          }`}
+          className={`pointer-events-auto glass-panel flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${showAnalytics
+            ? 'border-[#00E5FF]/30 text-[#00E5FF] glow-cyan'
+            : 'text-white/40 hover:text-white/60'
+            }`}
         >
           <BarChart3 className="w-4 h-4" />
           {showAnalytics ? 'Analytics' : 'Analytics'}
@@ -297,7 +298,22 @@ export default function FocusLensPage() {
                 <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00E5FF] to-white/90 mb-3">
                   Session Complete
                 </h1>
-                <p className="text-white/40">Here's your comprehensive attention analytics.</p>
+                <p className="text-white/40 mb-6">Here's your comprehensive attention analytics.</p>
+                <button
+                  onClick={() => {
+                    setTextContent(null);
+                    setFileUrl(null);
+                    setFileType(null);
+                    setSessionState('upload');
+                    setShowAnalytics(false);
+                    resetSession();
+                  }}
+                  className="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl font-bold text-base bg-gradient-to-r from-[#22D3A7] to-[#00E5FF] text-[#0A0C10] hover:scale-105 active:scale-95 transition-all duration-300"
+                  style={{ boxShadow: '0 0 30px rgba(0,229,255,0.25)' }}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Launch New Session
+                </button>
               </div>
             )}
             <AnalyticsDashboard isActive={true} />
@@ -314,10 +330,10 @@ export default function FocusLensPage() {
               />
               <p className="mt-6 text-white/50 text-lg">What are we focusing on today?</p>
             </div>
-            
+
             <label className="group relative w-full cursor-pointer h-64 rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.02] backdrop-blur-md hover:bg-white/[0.04] hover:border-[#00E5FF]/50 transition-all duration-300 flex flex-col items-center justify-center p-8 text-center overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-[#00E5FF]/0 to-[#00E5FF]/5 group-hover:opacity-100 opacity-0 transition-opacity duration-500" />
-              
+
               {isExtracting ? (
                 <>
                   <div className="w-10 h-10 rounded-full animate-spin mb-4" style={{ border: '2px solid rgba(0,229,255,0.1)', borderTopColor: '#00E5FF' }} />
@@ -336,18 +352,18 @@ export default function FocusLensPage() {
                   </div>
                 </>
               )}
-              <input 
-                type="file" 
-                className="hidden" 
-                accept=".pdf,.docx,.txt,.md,.csv" 
+              <input
+                type="file"
+                className="hidden"
+                accept=".pdf,.docx,.txt,.md,.csv"
                 onChange={handleFileUpload}
                 disabled={isExtracting}
               />
             </label>
-            
+
             <div className="mt-8 flex items-center justify-center gap-2">
               <div className="w-px h-8 bg-white/10" />
-              <button 
+              <button
                 onClick={() => {
                   setTextContent("# The Art of Deep Work\n\n## Introduction\n\nDeep work is the ability to focus without distraction on a cognitively demanding task. It's a skill that allows you to quickly master complicated information and produce better results in less time.\n\n### Key Principles\n\n- **Attention is a muscle**: The more you train it, the stronger it becomes\n- **Distractions are costly**: Every interruption costs valuable cognitive resources\n- **Flow state is precious**: Once broken, it takes significant time to re-enter\n\n## Benefits of Deep Work\n\n1. **Enhanced Learning**: Rapid mastery of complex subjects\n2. **Improved Quality**: Higher quality output in less time\n3. **Competitive Advantage**: In an increasingly distracted world, focus becomes rare and valuable\n4. **Personal Satisfaction**: Deep engagement leads to greater fulfillment");
                   setFileUrl(null);
@@ -383,15 +399,18 @@ export default function FocusLensPage() {
                   {fileName || "Sample Document"}
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => {
+                  if (sessionState === 'active') {
+                    handleEndSession();
+                  }
                   setTextContent(null);
                   setFileUrl(null);
                   setFileType(null);
                   setSessionState('upload');
+                  setShowAnalytics(false);
                 }}
                 className="text-xs text-white/30 hover:text-[#FF3B5C] transition-colors"
-                disabled={sessionState === 'active'}
               >
                 Close Document
               </button>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFocusStore } from '@/store/useFocusStore';
 import { FogOfWar } from './FogOfWar';
 
@@ -107,24 +107,93 @@ export function AdaptiveReader({
   };
 
   const processContent = (content: string) => {
-    const paragraphs = content.split('\n\n');
-    return paragraphs.map((paragraph, index) => {
-      const isHighlighted = highlightedSections.has(index);
-      return (
-        <p
-          key={index}
-          className={`mb-4 leading-relaxed transition-all duration-500 ${isHighlighted
+    const lines = content.split('\n');
+    const elements: React.JSX.Element[] = [];
+    let currentParagraph: string[] = [];
+    let listItems: string[] = [];
+    let elementIndex = 0;
+
+    const flushParagraph = () => {
+      if (currentParagraph.length > 0) {
+        const text = currentParagraph.join(' ');
+        const isHighlighted = highlightedSections.has(elementIndex);
+        elements.push(
+          <p
+            key={elementIndex}
+            className={`mb-4 leading-relaxed transition-all duration-500 ${isHighlighted
               ? 'border-l-2 border-[#00E5FF]/50 pl-4 text-white/80'
-              : 'text-white/50'
+              : 'text-white/60'
             }`}
-          style={{
-            textShadow: isHighlighted ? '0 0 30px rgba(0,229,255,0.05)' : 'none'
-          }}
-        >
-          {paragraph}
-        </p>
-      );
+            dangerouslySetInnerHTML={{
+              __html: text
+                .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white/90">$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code class="bg-white/10 px-1.5 py-0.5 rounded text-[#00E5FF] text-sm">$1</code>')
+            }}
+          />
+        );
+        elementIndex++;
+        currentParagraph = [];
+      }
+    };
+
+    const flushList = () => {
+      if (listItems.length > 0) {
+        elements.push(
+          <ul key={elementIndex} className="mb-4 space-y-2 pl-4">
+            {listItems.map((item, i) => (
+              <li key={i} className="text-white/60 flex items-start gap-2">
+                <span className="text-[#00E5FF] mt-1.5 text-[6px]">●</span>
+                <span dangerouslySetInnerHTML={{
+                  __html: item
+                    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white/90">$1</strong>')
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                }} />
+              </li>
+            ))}
+          </ul>
+        );
+        elementIndex++;
+        listItems = [];
+      }
+    };
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+
+      if (trimmed.startsWith('# ')) {
+        flushParagraph();
+        flushList();
+        elements.push(<h1 key={elementIndex} className="text-2xl font-black text-white mb-4 mt-6">{trimmed.slice(2)}</h1>);
+        elementIndex++;
+      } else if (trimmed.startsWith('## ')) {
+        flushParagraph();
+        flushList();
+        elements.push(<h2 key={elementIndex} className="text-xl font-bold text-white/90 mb-3 mt-5">{trimmed.slice(3)}</h2>);
+        elementIndex++;
+      } else if (trimmed.startsWith('### ')) {
+        flushParagraph();
+        flushList();
+        elements.push(<h3 key={elementIndex} className="text-lg font-semibold text-white/80 mb-2 mt-4">{trimmed.slice(4)}</h3>);
+        elementIndex++;
+      } else if (/^[-*] /.test(trimmed)) {
+        flushParagraph();
+        listItems.push(trimmed.slice(2));
+      } else if (/^\d+\.\s/.test(trimmed)) {
+        flushParagraph();
+        listItems.push(trimmed.replace(/^\d+\.\s/, ''));
+      } else if (trimmed === '') {
+        flushParagraph();
+        flushList();
+      } else {
+        flushList();
+        currentParagraph.push(trimmed);
+      }
     });
+
+    flushParagraph();
+    flushList();
+    return elements;
   };
 
   return (

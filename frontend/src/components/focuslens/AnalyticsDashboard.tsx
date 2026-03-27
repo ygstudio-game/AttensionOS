@@ -70,7 +70,7 @@ export function AnalyticsDashboard({ isActive, sessionId }: AnalyticsDashboardPr
   const [timeRange, setTimeRange] = useState<'1d' | '7d' | '30d' | '90d'>('7d');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { dwm, focusScore, gazeHeatmap, alertHistory, isFocused, faceDetected } = useFocusStore();
+  const { dwm, focusScore, gazeHeatmap, alertHistory, isFocused, faceDetected, focusHistory, sessionStartTime } = useFocusStore();
 
   useEffect(() => {
     if (!isActive) return;
@@ -80,20 +80,21 @@ export function AnalyticsDashboard({ isActive, sessionId }: AnalyticsDashboardPr
   const fetchAnalytics = async () => {
     setIsLoading(true);
     try {
-      const mockData = {
-        totalSessions: 15,
-        totalDWM: 120.5,
-        avgFocusScore: 72.3,
-        totalFrames: 45000,
+      // Build real metrics from the current session store data
+      const sessionDurationMin = sessionStartTime ? (Date.now() - sessionStartTime) / 60000 : 0;
+      const avgScore = focusHistory.length > 0 ? Math.round(focusHistory.reduce((a, b) => a + b, 0) / focusHistory.length) : 0;
+      const distractionCount = alertHistory.filter(a => a.type === 'distracted' || a.type === 'low_focus').length;
+
+      const realData = {
+        totalSessions: 1,
+        totalDWM: dwm,
+        avgFocusScore: avgScore,
+        totalFrames: gazeHeatmap.length,
         sessions: [
-          { date: '2024-01-15', dwm: 8.5, focusScore: 75, distractions: 3 },
-          { date: '2024-01-14', dwm: 6.2, focusScore: 68, distractions: 5 },
-          { date: '2024-01-13', dwm: 9.1, focusScore: 82, distractions: 2 },
-          { date: '2024-01-12', dwm: 4.8, focusScore: 55, distractions: 8 },
-          { date: '2024-01-11', dwm: 7.3, focusScore: 71, distractions: 4 },
+          { date: new Date().toISOString().split('T')[0], dwm: dwm, focusScore: avgScore, distractions: distractionCount },
         ]
       };
-      setMetrics(mockData);
+      setMetrics(realData);
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
     } finally {

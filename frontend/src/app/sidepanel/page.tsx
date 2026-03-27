@@ -19,6 +19,8 @@ export default function SidePanelPage() {
   const isFocusLensEnabled = useFocusStore(s => s.isFocusLensEnabled);
   const toggleSmartMediaPause = useFocusStore(s => s.toggleSmartMediaPause);
   const toggleFocusLens = useFocusStore(s => s.toggleFocusLens);
+  const isEyeCareEnabled = useFocusStore(s => s.isEyeCareEnabled);
+  const toggleEyeCare = useFocusStore(s => s.toggleEyeCare);
 
   const lastBlinkTime = useFocusStore(s => s.lastBlinkTime);
   const smartMediaRewindAmount = useFocusStore(s => s.smartMediaRewindAmount);
@@ -38,15 +40,15 @@ export default function SidePanelPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      // 20 minute eye strain warning (1,200,000 ms)
-      if (Date.now() - lastBlinkTime > 1200000 && isFocused) {
+      // 5 second blink reminder (5,000 ms)
+      if (Date.now() - lastBlinkTime > 5000 && isFocused && isEyeCareEnabled) {
         setEyeStrainWarning(true);
       } else {
         setEyeStrainWarning(false);
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [lastBlinkTime, isFocused]);
+  }, [lastBlinkTime, isFocused, isEyeCareEnabled]);
 
   // Initialize FaceLandmarker
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function SidePanelPage() {
         const vision = await FilesetResolver.forVisionTasks(
           "/mediapipe/wasm"
         );
-        
+
         const landmarker = await FaceLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath: "/mediapipe/face_landmarker.task",
@@ -72,7 +74,7 @@ export default function SidePanelPage() {
         faceMeshRef.current = landmarker;
         setFaceMeshReady(true);
         console.log("SidePanel: FaceLandmarker Initialized (Module)");
-        
+
         // Start Camera after landmarker is ready
         try {
           cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -132,12 +134,12 @@ export default function SidePanelPage() {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any[]) => {
           if (tabs[0]?.id) {
             let shouldBlur = false;
-            
+
             // FocusLens: Blur if you get distracted or drowsy
             if (isFocusLensEnabled && !isFocused) {
-               shouldBlur = true;
+              shouldBlur = true;
             }
-            
+
             chrome.tabs.sendMessage(tabs[0].id, {
               type: 'UPDATE_FOCUS_STATE',
               isFocused: isFocused && faceDetected,
@@ -190,8 +192,8 @@ export default function SidePanelPage() {
           </div>
         )}
 
-        {/* Global Alerts Feed */}
-        <div className="space-y-2">
+        {/* Global Alerts Feed — Fixed height to prevent layout shifts */}
+        <div className="space-y-2" style={{ minHeight: '120px' }}>
           <div className={`p-4 rounded-xl border transition-all duration-500 ${isFocused ? 'bg-sky-500/10 border-sky-500/30 text-sky-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-400'}`}>
             <div className="flex items-center gap-3">
               <div className={`w-2 h-2 rounded-full animate-pulse ${isFocused ? 'bg-sky-400' : 'bg-amber-400'}`} />
@@ -200,30 +202,34 @@ export default function SidePanelPage() {
               </span>
             </div>
           </div>
-          
-          {!isFocused && isSmartMediaPauseEnabled && (
-            <div className="p-3 rounded-xl border border-[#A855F7]/30 bg-[#A855F7]/10 text-[#A855F7] flex items-center justify-center gap-2">
-              <span className="text-xs font-bold tracking-widest uppercase">⏸ Media Auto-Paused</span>
-            </div>
-          )}
 
-          {eyeStrainWarning && (
-            <div className="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 animate-pulse flex items-center justify-center gap-2">
-              <span className="text-xs font-bold tracking-widest uppercase">👁 Eye Strain: Please Blink!</span>
-            </div>
-          )}
+          <div
+            className={`p-3 rounded-xl border border-[#A855F7]/30 bg-[#A855F7]/10 text-[#A855F7] flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden ${
+              !isFocused && isSmartMediaPauseEnabled ? 'max-h-16 opacity-100' : 'max-h-0 opacity-0 p-0 border-transparent'
+            }`}
+          >
+            <span className="text-xs font-bold tracking-widest uppercase">⏸ Media Auto-Paused</span>
+          </div>
+
+          <div
+            className={`p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden ${
+              eyeStrainWarning ? 'max-h-16 opacity-100 animate-pulse' : 'max-h-0 opacity-0 p-0 border-transparent'
+            }`}
+          >
+            <span className="text-xs font-bold tracking-widest uppercase">👁 Eye Strain: Please Blink!</span>
+          </div>
         </div>
 
         {/* Module Toggles */}
         <div className="bg-slate-900/40 p-5 rounded-2xl border border-white/5 shadow-inner space-y-4">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Active Modules</h3>
-          
+
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-white/90">Focus Lens</span>
               <span className="text-[10px] text-slate-500">Distraction Blurring</span>
             </div>
-            <button 
+            <button
               onClick={toggleFocusLens}
               className={`w-11 h-6 rounded-full transition-colors relative ${isFocusLensEnabled ? 'bg-emerald-500' : 'bg-slate-700'}`}
             >
@@ -235,22 +241,37 @@ export default function SidePanelPage() {
 
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
+              <span className="text-sm font-semibold text-white/90">EyeCare</span>
+              <span className="text-[10px] text-slate-500">Blink Reminders</span>
+            </div>
+            <button
+              onClick={toggleEyeCare}
+              className={`w-11 h-6 rounded-full transition-colors relative ${isEyeCareEnabled ? 'bg-[#22D3A7]' : 'bg-slate-700'}`}
+            >
+              <div className={`w-4 h-4 bg-white rounded-full absolute top-[4px] transition-transform ${isEyeCareEnabled ? 'translate-x-[24px]' : 'translate-x-[4px]'}`} />
+            </button>
+          </div>
+
+          <div className="w-full border-t border-white/5" />
+
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
               <span className="text-sm font-semibold text-white/90">Smart Media Pause</span>
               <span className="text-[10px] text-slate-500">Auto-Pause & Rewind</span>
             </div>
-            <button 
+            <button
               onClick={toggleSmartMediaPause}
               className={`w-11 h-6 rounded-full transition-colors relative ${isSmartMediaPauseEnabled ? 'bg-[#A855F7]' : 'bg-slate-700'}`}
             >
               <div className={`w-4 h-4 bg-white rounded-full absolute top-[4px] transition-transform ${isSmartMediaPauseEnabled ? 'translate-x-[24px]' : 'translate-x-[4px]'}`} />
             </button>
           </div>
-          
+
           <div className="w-full border-t border-white/5" />
-          
+
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-white/90">Rewind Amount</span>
-            <select 
+            <select
               className="bg-slate-800 border-none outline-none rounded-lg text-xs px-2 py-1.5 font-mono text-white/80"
               value={smartMediaRewindAmount}
               onChange={(e) => setSmartMediaRewindAmount(Number(e.target.value))}
@@ -265,10 +286,10 @@ export default function SidePanelPage() {
 
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-white/90">Show Camera Preview</span>
-             <button 
+            <button
               onClick={toggleCameraPreview}
               className={`w-11 h-6 rounded-full transition-colors relative ${showCameraPreview ? 'bg-indigo-500' : 'bg-slate-700'}`}
-             >
+            >
               <div className={`w-4 h-4 bg-white rounded-full absolute top-[4px] transition-transform ${showCameraPreview ? 'translate-x-[24px]' : 'translate-x-[4px]'}`} />
             </button>
           </div>
@@ -277,7 +298,7 @@ export default function SidePanelPage() {
 
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-white/90">Audio Alerts</span>
-            <button 
+            <button
               onClick={toggleAudioMute}
               className={`w-11 h-6 rounded-full transition-colors relative ${!isAudioMuted ? 'bg-orange-500' : 'bg-slate-700'}`}
             >
@@ -289,7 +310,7 @@ export default function SidePanelPage() {
 
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-white/90">Voice Notifications (TTS)</span>
-            <button 
+            <button
               onClick={toggleSpeech}
               className={`w-11 h-6 rounded-full transition-colors relative ${isSpeechEnabled ? 'bg-teal-500' : 'bg-slate-700'}`}
             >
