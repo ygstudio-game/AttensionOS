@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:extension": "next build && node extension.js",
     "start": "next start",
     "lint": "eslint"
   },
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/chrome": "^0.1.38",
     "@types/lodash": "^4.17.24",
     "@types/node": "^20",
     "@types/pdfjs-dist": "^2.10.378",

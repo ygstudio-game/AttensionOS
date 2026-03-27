@@ -8,6 +8,7 @@ import { AnalyticsDashboard } from "@/components/focuslens/AnalyticsDashboard";
 import { CompactAnalyticsWidget } from "@/components/focuslens/AnalyticsDashboard";
 import { BarChart3, Mic, MicOff, Volume2, VolumeX, UploadCloud, FileText, Square } from "lucide-react";
 import { extractTextFromFile } from "@/lib/utils/documentParser";
+import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 
 export default function FocusLensPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -77,38 +78,63 @@ export default function FocusLensPage() {
     }
   };
 
+  const landmarkerRef = useRef<FaceLandmarker | null>(null);
+  const [calcEngine] = useState(() => new AttentionEngine());
+
   useEffect(() => {
     let animationId: number;
-    let engine: any;
+    let cameraStream: MediaStream | null = null;
     let lastUpdateTime = 0;
 
     const initEngine = async () => {
-      const waitForFaceMesh = setInterval(async () => {
-        if (typeof (window as any).FaceMesh !== "undefined") {
-          clearInterval(waitForFaceMesh);
-          engine = new AttentionEngine();
-          setEngineReady(true);
-          startTracking();
-        }
-      }, 500);
+      try {
+        const vision = await FilesetResolver.forVisionTasks("/mediapipe/wasm");
+        const landmarker = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "/mediapipe/face_landmarker.task",
+            delegate: "GPU"
+          },
+          outputFaceBlendshapes: true,
+          runningMode: "VIDEO"
+        });
+
+        landmarkerRef.current = landmarker;
+        setEngineReady(true);
+        startTracking();
+      } catch (error) {
+        console.error("Failed to initialize FaceLandmarker:", error);
+      }
     };
 
     const startTracking = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        cameraStream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480 }
         });
 
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          videoRef.current.srcObject = cameraStream;
           videoRef.current.onloadedmetadata = () => {
-            const loop = async () => {
-              if (engine && videoRef.current && sessionActiveRef.current) {
+            const loop = () => {
+              if (landmarkerRef.current && videoRef.current && sessionActiveRef.current && videoRef.current.readyState >= 2) {
                 const now = Date.now();
                 if (now - lastUpdateTime >= 100) {
                   try {
-                    const results = await engine.processFrame(videoRef.current);
-                    updateFromEngine(results);
+                    const results = landmarkerRef.current.detectForVideo(videoRef.current, performance.now());
+                    if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+                      calcEngine.processRawResults(results.faceLandmarks, updateFromEngine);
+                    } else {
+                      updateFromEngine({
+                        focusScore: 0,
+                        faceDetected: false,
+                        isDrowsy: false,
+                        isDistracted: true,
+                        headAligned: false,
+                        gazePosition: undefined,
+                        saccadeDetected: false,
+                        fixationDuration: 0
+                      });
+                    }
                     lastUpdateTime = now;
                   } catch (error) {
                     console.warn('Frame processing error:', error);
@@ -129,8 +155,8 @@ export default function FocusLensPage() {
 
     return () => {
       cancelAnimationFrame(animationId);
-      if (videoRef.current?.srcObject) {
-        (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
       }
     };
   }, [updateFromEngine]);

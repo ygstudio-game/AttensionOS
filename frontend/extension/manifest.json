@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "AttentionOS",
+  "version": "1.0.0",
+  "description": "AttentionOS - FocusLens ",
+  "permissions": [
+    "sidePanel",
+    "tabs",
+    "scripting",
+        "activeTab"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "action": {
+    "default_title": "Open AttentionOS"
+  },
+  "side_panel": {
+    "default_path": "index.html"
+  }
+}

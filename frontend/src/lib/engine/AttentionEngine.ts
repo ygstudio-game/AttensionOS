@@ -7,12 +7,15 @@ export interface AttentionResults {
   headAligned: boolean;
   faceDetected: boolean;
   gazePosition?: { x: number; y: number };
-  saccadeDetected: boolean;
-  fixationDuration: number;
+  saccadeDetected: boolean;  // MUST BE HERE
+  fixationDuration: number;  // MUST BE HERE
+
 }
 
 // Access MediaPipe from the global window object
 declare var FaceMesh: any;
+declare var FaceLandmarker: any;
+declare var FilesetResolver: any;
 
 export class AttentionEngine {
   private faceMesh: any;
@@ -26,104 +29,128 @@ export class AttentionEngine {
   private fixationThreshold: number = 0.2; // Minimum time to consider a fixation
 
   constructor() {
-    // We check if it exists (it will be loaded by a script tag in the layout)
-    if (typeof FaceMesh === "undefined") {
-      console.error("MediaPipe FaceMesh not loaded yet!");
+    // MediaPipe initialization is now optional in constructor
+    // as we prefer passing results to processRawResults or processFaceLandmarks
+    this.initializeLegacyFaceMesh();
+  }
+
+  private initializeLegacyFaceMesh() {
+    if (typeof FaceMesh !== "undefined") {
+      this.faceMesh = new FaceMesh({
+        locateFile: (file: string) => {
+          if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+            return chrome.runtime.getURL(`mediapipe/${file}`);
+          }
+          return `/mediapipe/${file}`;
+        },
+      });
+
+      this.faceMesh.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+
+      this.faceMesh.onResults((results: any) => {
+        if (!this.resolveCallback) return;
+        this.processLegacyMeshResults(results);
+      });
+    }
+  }
+
+  private processLegacyMeshResults(results: any) {
+    if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+      this.resolveCallback!({
+        focusScore: 0,
+        faceDetected: false,
+        isDrowsy: false,
+        isDistracted: true,
+        headAligned: false,
+        gazePosition: undefined,
+        saccadeDetected: false,
+        fixationDuration: 0
+      });
+      return;
+    }
+    this.processRawResults(results.multiFaceLandmarks, this.resolveCallback!);
+  }
+
+  public processRawResults(multiFaceLandmarks: any[], callback: (results: AttentionResults) => void) {
+    if (!multiFaceLandmarks || multiFaceLandmarks.length === 0) {
+      callback({
+        focusScore: 0,
+        faceDetected: false,
+        isDrowsy: false,
+        isDistracted: true,
+        headAligned: false,
+        gazePosition: undefined,
+        saccadeDetected: false,
+        fixationDuration: 0
+      });
       return;
     }
 
-    this.faceMesh = new FaceMesh({
-      locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-    });
+    // landmarks is an array of {x, y, z}
+    const landmarks = multiFaceLandmarks[0];
 
-    this.faceMesh.setOptions({
-      maxNumFaces: 1,
-      refineLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    });
+    const leftEar = this.calculateEAR(landmarks, [362, 385, 387, 263, 373, 380]);
+    const rightEar = this.calculateEAR(landmarks, [33, 160, 158, 133, 153, 144]);
+    const isDrowsy = (leftEar + rightEar) / 2 < 0.15;
 
-    this.faceMesh.onResults((results: any) => {
-      if (!this.resolveCallback) return;
+    const gazeData = this.estimateGazeWithPosition(landmarks, [362, 263], [474, 475, 476, 477], [33, 133], [469, 470, 471, 472]);
+    const headData = this.calculateHeadAlignment(landmarks); // Uses the new helper
+    const saccadeData = this.detectSaccadesAndFixations(gazeData.position);
 
-      if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
-        this.resolveCallback({
-          focusScore: 0,
-          faceDetected: false,
-          isDrowsy: false,
-          isDistracted: true,
-          headAligned: false,
-          gazePosition: undefined,
-          saccadeDetected: false,
-          fixationDuration: 0
-        });
-        return;
-      }
+    const eyeScore = isDrowsy ? 0 : 1;
+    const alignmentScore = headData.aligned ? 1 : 0.5;
+    const focusScore = ((0.4 * eyeScore) + (0.3 * gazeData.score) + (0.3 * alignmentScore)) * 100;
 
-      const landmarks = results.multiFaceLandmarks[0];
-
-      // EAR Logic (Drowsiness) - relaxed threshold from 0.2 to 0.15
-      const leftEar = this.calculateEAR(landmarks, [362, 385, 387, 263, 373, 380]);
-      const rightEar = this.calculateEAR(landmarks, [33, 160, 158, 133, 153, 144]);
-      const isDrowsy = (leftEar + rightEar) / 2 < 0.15;
-
-      // Enhanced Gaze Logic with position tracking
-      const gazeData = this.estimateGazeWithPosition(landmarks, [362, 263], [474, 475, 476, 477], [33, 133], [469, 470, 471, 472]);
-      const gazeScore = gazeData.score;
-      const gazePosition = gazeData.position;
-
-      // Head Alignment (Yaw/Pitch/Roll) - Using 3D landmarks for better accuracy
-      const nose = landmarks[1];
-      const leftEye = landmarks[33];
-      const rightEye = landmarks[263];
-      const forehead = landmarks[10];
-      const chin = landmarks[152];
-      const leftCheek = landmarks[234];
-      const rightCheek = landmarks[454];
-
-      // Calculate Yaw (Left/Right rotation)
-      // Comparison of X distance of nose from face sides, balanced by Z depth
-      const leftDist = Math.abs(nose.x - leftCheek.x);
-      const rightDist = Math.abs(nose.x - rightCheek.x);
-      const yaw = (leftDist - rightDist) / (leftDist + rightDist);
-
-      // Calculate Pitch (Up/Down rotation)
-      // Comparison of Y distance of nose from forehead vs chin
-      const upperDist = Math.abs(nose.y - forehead.y);
-      const lowerDist = Math.abs(nose.y - chin.y);
-      const pitch = (upperDist - lowerDist) / (upperDist + lowerDist);
-
-      // Calculate Roll (Tilting side to side)
-      // Slope between the eyes
-      const roll = (rightEye.y - leftEye.y) / (rightEye.x - leftEye.x);
-
-      // Strict alignment thresholds (approx 15-20 degrees equivalent)
-      const isYawAligned = Math.abs(yaw) < 0.343;
-      const isPitchAligned = pitch > -0.2 && pitch < 0.35; // Allow slightly more downward look for reading
-      const isRollAligned = Math.abs(roll) < 0.2;
-
-      const headAligned = isYawAligned && isPitchAligned && isRollAligned;
-
-      // Saccade and Fixation Detection
-      const saccadeData = this.detectSaccadesAndFixations(gazePosition);
-
-      // FS = (0.4 * Eye State) + (0.3 * Gaze Centrality) + (0.3 * Head Alignment)
-      const eyeScore = isDrowsy ? 0 : 1;
-      const alignmentScore = headAligned ? 1 : 0.5;
-      const focusScore = ((0.4 * eyeScore) + (0.3 * gazeScore) + (0.3 * alignmentScore)) * 100;
-      this.resolveCallback({
-        focusScore: Math.round(focusScore),
-        isDrowsy,
-        isDistracted: gazeScore < 1.0,
-        headAligned,
-        faceDetected: true,
-        gazePosition: gazePosition,
-        saccadeDetected: saccadeData.saccadeDetected,
-        fixationDuration: saccadeData.fixationDuration
-      });
+    callback({
+      focusScore: Math.round(focusScore),
+      isDrowsy,
+      isDistracted: gazeData.score < 1.0,
+      headAligned: headData.aligned,
+      faceDetected: true,
+      gazePosition: gazeData.position,
+      saccadeDetected: saccadeData.saccadeDetected,
+      fixationDuration: saccadeData.fixationDuration
     });
   }
+  // Add this inside the AttentionEngine class
+  private calculateHeadAlignment(landmarks: any) {
+    const nose = landmarks[1];
+    const forehead = landmarks[10];
+    const chin = landmarks[152];
+    const leftCheek = landmarks[234];
+    const rightCheek = landmarks[454];
+    const leftEye = landmarks[33];
+    const rightEye = landmarks[263];
 
+    // Yaw (Left/Right)
+    const leftDist = Math.abs(nose.x - leftCheek.x);
+    const rightDist = Math.abs(nose.x - rightCheek.x);
+    const yaw = (leftDist - rightDist) / (leftDist + rightDist);
+
+    // Pitch (Up/Down)
+    const upperDist = Math.abs(nose.y - forehead.y);
+    const lowerDist = Math.abs(nose.y - chin.y);
+    const pitch = (upperDist - lowerDist) / (upperDist + lowerDist);
+
+    // Roll (Tilt)
+    const roll = (rightEye.y - leftEye.y) / (rightEye.x - leftEye.x);
+
+    const isYawAligned = Math.abs(yaw) < 0.343;
+    const isPitchAligned = pitch > -0.2 && pitch < 0.35;
+    const isRollAligned = Math.abs(roll) < 0.2;
+
+    return {
+      aligned: isYawAligned && isPitchAligned && isRollAligned,
+      yaw,
+      pitch,
+      roll
+    };
+  }
   private calculateEAR(landmarks: any, indices: number[]) {
     const p = indices.map(i => landmarks[i]);
     const dist = (a: any, b: any) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
@@ -248,4 +275,8 @@ export class AttentionEngine {
       }
     });
   }
+}
+
+interface FocusState extends AttentionResults {
+  updateFromEngine: (results: AttentionResults) => void;
 }
