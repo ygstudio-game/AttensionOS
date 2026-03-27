@@ -1,3 +1,4 @@
+"use client"
 import { useEffect, useState } from 'react';
 import { useFocusStore } from '@/store/useFocusStore';
 import { PostSessionHeatmap } from './HeatmapOverlay';

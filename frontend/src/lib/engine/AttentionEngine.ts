@@ -7,8 +7,10 @@ export interface AttentionResults {
   headAligned: boolean;
   faceDetected: boolean;
   gazePosition?: { x: number; y: number };
-  saccadeDetected: boolean;  // MUST BE HERE
-  fixationDuration: number;  // MUST BE HERE
+  saccadeDetected: boolean;
+  fixationDuration: number;
+  multipleFacesDetected: boolean;
+  isBlinking: boolean;
 
 }
 
@@ -69,7 +71,9 @@ export class AttentionEngine {
         headAligned: false,
         gazePosition: undefined,
         saccadeDetected: false,
-        fixationDuration: 0
+        fixationDuration: 0,
+        multipleFacesDetected: false,
+        isBlinking: false
       });
       return;
     }
@@ -86,7 +90,9 @@ export class AttentionEngine {
         headAligned: false,
         gazePosition: undefined,
         saccadeDetected: false,
-        fixationDuration: 0
+        fixationDuration: 0,
+        multipleFacesDetected: false,
+        isBlinking: false
       });
       return;
     }
@@ -96,11 +102,16 @@ export class AttentionEngine {
 
     const leftEar = this.calculateEAR(landmarks, [362, 385, 387, 263, 373, 380]);
     const rightEar = this.calculateEAR(landmarks, [33, 160, 158, 133, 153, 144]);
-    const isDrowsy = (leftEar + rightEar) / 2 < 0.15;
+    const ear = (leftEar + rightEar) / 2.0;
+
+    const isDrowsy = ear < 0.15;
+    const isBlinking = ear < 0.24 && ear >= 0.15; // Fast blink/squint
+
 
     const gazeData = this.estimateGazeWithPosition(landmarks, [362, 263], [474, 475, 476, 477], [33, 133], [469, 470, 471, 472]);
     const headData = this.calculateHeadAlignment(landmarks); // Uses the new helper
     const saccadeData = this.detectSaccadesAndFixations(gazeData.position);
+    const multipleFacesDetected = multiFaceLandmarks.length > 1;
 
     const eyeScore = isDrowsy ? 0 : 1;
     const alignmentScore = headData.aligned ? 1 : 0.5;
@@ -114,9 +125,14 @@ export class AttentionEngine {
       faceDetected: true,
       gazePosition: gazeData.position,
       saccadeDetected: saccadeData.saccadeDetected,
-      fixationDuration: saccadeData.fixationDuration
+      fixationDuration: saccadeData.fixationDuration,
+      multipleFacesDetected,
+      isBlinking
     });
   }
+
+
+
   // Add this inside the AttentionEngine class
   private calculateHeadAlignment(landmarks: any) {
     const nose = landmarks[1];

@@ -21,6 +21,13 @@ interface AttentionState {
   saccadeDetected: boolean;   // Added to match Engine
   fixationDuration: number;   // Added to match Engine
 
+  // --- NEW: Advanced Features ---
+  multipleFacesDetected: boolean;
+  smartMediaRewindAmount: number;
+  showCameraPreview: boolean;
+  isFocusLensEnabled: boolean;
+  lastBlinkTime: number;
+
   // --- Session Analytics ---
   dwm: number;
   sessionStartTime: number | null;
@@ -34,6 +41,10 @@ interface AttentionState {
   alertSensitivity: 'low' | 'medium' | 'high';
   lastAlertTime: number;
   distractedSince: number | null;
+  
+  // --- Module Settings ---
+  isSmartMediaPauseEnabled: boolean;
+
   customAudioFiles: {
     low_focus?: string;
     fatigue?: string;
@@ -51,12 +62,22 @@ interface AttentionState {
     gazePosition?: { x: number; y: number };
     saccadeDetected: boolean; // Signature updated
     fixationDuration: number; // Signature updated
+    multipleFacesDetected: boolean;
+    isBlinking: boolean;
   }) => void;
 
   addGazePoint: (x: number, y: number) => void;
   triggerAlert: (type: 'low_focus' | 'fatigue' | 'distracted' | 'break_reminder', message: string) => void;
   toggleAudioMute: () => void;
   toggleSpeech: () => void;
+  
+  toggleSmartMediaPause: () => void;
+  toggleFocusLens: () => void;
+  
+
+  setSmartMediaRewindAmount: (seconds: number) => void;
+  toggleCameraPreview: () => void;
+
   updateAlertSensitivity: (sensitivity: 'low' | 'medium' | 'high') => void;
   setCustomAudioFile: (type: 'low_focus' | 'fatigue' | 'distracted' | 'break_reminder', audioUrl: string) => void;
   resetSession: () => void;
@@ -74,6 +95,11 @@ export const useFocusStore = create<AttentionState>((set, get) => ({
   headAligned: true,
   saccadeDetected: false, // Initialized
   fixationDuration: 0,    // Initialized
+  multipleFacesDetected: false,
+  smartMediaRewindAmount: 5,
+  showCameraPreview: true,
+  isFocusLensEnabled: true,
+  lastBlinkTime: Date.now(),
   dwm: 0,
   sessionStartTime: null,
   lastTelemetrySync: Date.now(),
@@ -85,12 +111,14 @@ export const useFocusStore = create<AttentionState>((set, get) => ({
   alertSensitivity: 'medium',
   lastAlertTime: 0,
   distractedSince: null,
+  isSmartMediaPauseEnabled: true,
   customAudioFiles: {},
 
   updateFromEngine: throttle((results) => {
     const {
       focusScore, isDrowsy, isDistracted, headAligned,
-      faceDetected, gazePosition, saccadeDetected, fixationDuration
+      faceDetected, gazePosition, saccadeDetected, fixationDuration,
+      multipleFacesDetected, isBlinking
     } = results;
 
     set((state) => {
@@ -105,7 +133,7 @@ export const useFocusStore = create<AttentionState>((set, get) => ({
       const SUSTAINED_DISTRACTION_LIMIT = 3000;
 
       const wasFocused = state.isFocused;
-      const willBeFocused = focusScore > 60 && faceDetected && !isDrowsy && headAligned;
+      const willBeFocused = focusScore > 60 && faceDetected && !isDrowsy && headAligned && !multipleFacesDetected;
 
       if (!wasFocused && willBeFocused && typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
@@ -150,6 +178,8 @@ export const useFocusStore = create<AttentionState>((set, get) => ({
         faceDetected,
         saccadeDetected, // Updated state
         fixationDuration, // Updated state
+        multipleFacesDetected,
+        lastBlinkTime: isBlinking ? now : state.lastBlinkTime,
         sessionStartTime: state.sessionStartTime || now,
       };
     });
@@ -175,6 +205,13 @@ export const useFocusStore = create<AttentionState>((set, get) => ({
 
   toggleAudioMute: () => set((state) => ({ isAudioMuted: !state.isAudioMuted })),
   toggleSpeech: () => set((state) => ({ isSpeechEnabled: !state.isSpeechEnabled })),
+  toggleSmartMediaPause: () => set((state) => ({ isSmartMediaPauseEnabled: !state.isSmartMediaPauseEnabled })),
+  toggleFocusLens: () => set((state) => ({ isFocusLensEnabled: !state.isFocusLensEnabled })),
+
+
+  setSmartMediaRewindAmount: (seconds) => set({ smartMediaRewindAmount: seconds }),
+  toggleCameraPreview: () => set((state) => ({ showCameraPreview: !state.showCameraPreview })),
+
   updateAlertSensitivity: (sensitivity) => set({ alertSensitivity: sensitivity }),
   setCustomAudioFile: (type, audioUrl) => set((state) => ({
     customAudioFiles: { ...state.customAudioFiles, [type]: audioUrl }

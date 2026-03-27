@@ -1,61 +1,37 @@
-# AttentionOS: Impetus 2026 (INC '26) Pitch Guide
+# AttentionOS: Impetus 2026 Pitch Script
 
-Use this guide to structure your 3-minute hackathon presentation and slides.
-
-## 🎤 3-Minute Pitch Script
-
-### **[0:00 - 0:30] The Hook (The Problem)**
-"Every day, we spend hours in a state of 'digital drift.' We open a tab to work, and 20 minutes later, we're 10 levels deep in a rabbit hole with no memory of how we got there. We are becoming spectators in our own digital lives. Digital distraction isn't just a productivity killer; it’s an attention crisis. We need a way to wake up."
-
-### **[0:30 - 1:15] The Solution (The Innovation)**
-"Introducing **AttentionOS**: the first biometric awareness layer for your browser. It’s not a blocker; it’s a feedback loop. Using the same edge-AI that powers self-driving cars, AttentionOS monitors your focus in real-time. It measures your blink rate for fatigue, your head pose for engagement, and your gaze patterns for cognitive load. It doesn’t just 'know' where you are looking—it 'knows' if you are paying attention."
-
-### **[1:15 - 2:00] The "Magic" Moment (Fog of War)**
-"But awareness isn't enough. We need a cue. When AttentionOS detects you've drifted off, it triggers the **Fog of War**. Your screen gently blurs—a physical visual cue that breaks the 'zombie' cycle. It forces a neural reset, prompting you to breathe, refocus, and regain control of your time."
-
-### **[2:00 - 2:45] The "Hard" Tech (Privacy & Security)**
-"Building this in 2026 meant overcoming the toughest security barriers in the browser. We engineered a direct, WASM-accelerated biometric engine that runs 100% locally. Your camera feed never leaves your RAM. We solved the Manifest V3 CSP restrictions to deliver a real-time, zero-latency experience that respects user privacy as a human right."
-
-### **[2:45 - 3:00] The Vision (Conclusion)**
-"From deep work for developers to gaze-control accessibility for the motor-impaired—AttentionOS is the future of human-computer interaction. Don't just browse. Pay attention. Thank you."
+**Duration:** ~3 Minutes
+**Tone:** Energetic, highly technical, and focused on real-world market viability.
 
 ---
 
-## 📊 Slide Outline
+## 🎤 The Pitch
 
-### **Slide 1: Title**
-*   **Visual:** AttentionOS Logo (Neon Cyan), "The Biometric Awareness Layer."
-*   **Key Text:** Impetus 2026 | Team [Team Name]
+**[0:00 - 0:30] The Hook (The Problem)**
+"Good afternoon, Judges. Every day, we spend hours in a state of 'digital drift.' We open a tab to work, and twenty minutes later, we're ten levels deep in a rabbit hole with no memory of how we got there. Furthermore, working in open offices or cafes leaves our most sensitive data exposed to anyone walking by. Digital distraction and physical privacy aren't just annoyances—they are billion-dollar liabilities. We need our machines to be as aware of us as we are of them."
 
-### **Slide 2: The Attention Crisis**
-*   **Visual:** A messy browser with 50+ tabs, "Zombie Browsing" label.
-*   **Key Text:** 40% of time online is spent on distractions. Attention is the new currency.
+**[0:30 - 1:15] The Core Engine (The Tech)**
+"Introducing **AttentionOS**. We built a biometric, attention-aware Chrome Extension using Next.js 14, TypeScript, and a custom WebAssembly-accelerated AI engine. Building this in 2026 meant overcoming the toughest security barriers in the browser. We engineered a 'Sandbox DMZ' to comply with strict Chrome Manifest V3 regulations. This allows our MediaPipe engine to run 100% locally in the Side Panel. Your camera feed never goes to a server; it never even leaves your RAM. It’s zero-latency, and it provides total user privacy."
 
-### **Slide 3: Real-Time Biometrics**
-*   **Visual:** Screenshot of the Side Panel with the Mesh overlay and Focus Meter.
-*   **Key Text:** EAR (Drowsiness), 3D Pose (Engagement), Gaze Fixation.
+**[1:15 - 2:15] The Magic (The 3 Core Modules)**
+"Because we have real-time access to 3D Head Alignment and Gaze data, we built three revolutionary modules on top of this engine:
 
-### **Slide 4: The Fog of War**
-*   **Visual:** Before/After split of a blurred webpage.
-*   **Key Text:** A sensory "reset" cue. Real-time Shadow DOM injection.
+First, **StealthHide**. Privacy shouldn't be reactive. StealthHide provides presence-based security. If you have a banking portal or a proprietary codebase open, the instant you look away or someone walks up to you, the screen blurs. Your data is masked before you even realize you've been distracted.
 
-### **Slide 5: Privacy-Ready Architecture**
-*   **Visual:** Diagram showing Local WASM Processing (No Cloud/No Server).
-*   **Key Text:** Edge-AI via MediaPipe. 100% Privacy. Manifest V3 Compliant.
+Second, **Smart Media Pause**. We've solved the e-learning distraction problem. If you are watching a video on YouTube or Coursera and you glance down to check your phone, AttentionOS automatically pauses the video. When you look back at the screen, it automatically rewinds five seconds so you catch what you missed, and resumes playing.
 
-### **Slide 6: Impact & Future**
-*   **Visual:** Use cases: Education, Coding, Accessibility.
-*   **Key Text:** The first step toward an attention-aware OS.
+Finally, the **Flow State Dashboard**. We built a beautiful Next.js UI using Zustand for state management that logs your genuine 'focus intervals.' It doesn’t track basic screen time; it visualizes your true, deep work sessions over time, keeping all underlying data securely stored locally."
+
+**[2:15 - 2:45] Market Viability**
+"We aren't just building a neat hack; we're establishing a new paradigm. Whether it's shielding corporate data in shared workspaces, accelerating distance learning without missing a beat, or finally giving developers the analytics they need to optimize their 'flow state', AttentionOS represents a massive leap forward in software utility."
+
+**[2:45 - 3:00] The Vision (Conclusion)**
+"From deep work for developers to proactive security for the enterprise. We are moving from devices that we command, to devices that understand us. AttentionOS is the future of human-computer interaction. Don't just browse. Pay attention. Thank you."
 
 ---
 
-## 🏆 Judges' Q&A Cheat Sheet
+## 💡 Live Demo Execution Strategy:
 
-**Q: Why a Chrome Extension and not a standalone app?**
-*   **A:** "Because the browser is where 90% of our information consumption happens. By being an extension, we live inside the user's workflow without requiring them to switch contexts."
-
-**Q: How do you handle different lighting or glasses?**
-*   **A:** "We use the latest MediaPipe FaceLandmarker with 478 points of reference. It’s uniquely robust against environmental changes and occlusion, providing stable EAR and Pose data even in low-light hackathon environments!"
-
-**Q: Is it distracting to have the screen blur?**
-*   **A:** "That’s the point. It’s more distracting to spend 3 hours procrastinating. The blur is a 'gentle friction' that saves time in the long run."
+1. **Start** by showing the **Flow State Dashboard** UI to prove the Next.js quality.
+2. **Launch StealthHide:** Open a split screen or IDE, visibly turn your head away from the judges, and let them see the screen instantly blur.
+3. **The 'Magic' Moment (Smart Media Pause):** Load up a YouTube video. Let it play. Pick up your phone and look at it. Let the judges hear the audio stop. Look back at the screen, watch it scrub back 5 seconds, and resume playing. This is your mic-drop moment. 

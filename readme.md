@@ -1,61 +1,57 @@
-# AttentionOS: The Biometric Awareness Layer
+# AttentionOS
 
-**AttentionOS** is a state-of-the-art Chrome Extension designed for the **Impetus 2026 (INC '26)** hackathon. It transforms your browser into an attention-aware environment using real-time biometric feedback. By processing edge-AI face landmarks locally, it helps users maintain "Deep Work" states and prevents digital burnout through a physical visual cue known as the **Fog of War**.
+**The First Biometric, Attention-Aware Chrome Extension**
 
----
-
-## 🚀 The Problem & Solution
-*   **The Problem:** In an era of infinite scrolls and constant notifications, users suffer from "Zombie Browsing"—a state of low-awareness consumption that kills productivity and mental health.
-*   **The Solution:** An AI-powered biometric feedback loop that monitors focus in real-time and gently "resets" the user's attention when they drift or become drowsy.
+AttentionOS is a zero-latency, privacy-first Chrome Extension built for the **Impetus 2026** hackathon. It transforms your browser from a passive tool into an active, intelligent environment that helps you maintain deep work, protect your privacy, and learn more effectively.
 
 ---
 
-## 🛠️ Technical Architecture: "Hard Engineering" for MV3
-AttentionOS represents a major engineering feat in the context of **Chrome Manifest V3 (MV3)** security restrictions.
+## 🎯 The Core Value Proposition
+In a world engineered to steal our focus, managing attention is the ultimate competitive advantage. Open offices expose our private data to shoulder surfers. Endless notifications shatter our flow state. Long learning videos drone on while we look at our phones. 
 
-### 1. Direct FaceLandmarker Integration (Security DMZ)
-While Manifest V3 typically blocks high-performance WASM AI due to strict Content Security Policies (CSP) against `eval()`, AttentionOS uses the modern **MediaPipe Tasks Vision API**.
-*   **WASM Optimization:** We host MediaPipe WASM binaries and the `face_landmarker.task` model locally within the extension to bypass remote code execution restrictions.
-*   **Origin Persistence:** Biometric processing occurs directly in the **Side Panel** origin, allowing for stable, non-sandboxed hardware access (Camera API) while remaining compliant with `'wasm-unsafe-eval'` CSP guidelines.
-
-### 2. The Biometric Engine (`AttentionEngine.ts`)
-The core engine processes 478 face landmarks at ~15-30 FPS locally on the CPU/GPU:
-*   **EAR (Eye Aspect Ratio):** Real-time monitoring of blink frequency and duration to detect micro-sleeps and drowsiness.
-*   **3D Head Pose Estimation:** Calculates **Yaw, Pitch, and Roll** to determine if the user is looking away from their work or slouching.
-*   **Saccade & Fixation Tracking:** Analyzes rapid eye movements (saccades) versus sustained focus (fixations) to quantify cognitive load.
-
-### 3. Fog of War (Real-Time Visual Feedback)
-When the Biometric Engine detects a "Distracted" or "Drowsy" state, it triggers the **Fog of War**:
-*   **Content Script Injection:** A lightweight, Shadow DOM-isolated overlay is injected into every host webpage.
-*   **Hardware-Accelerated Blur:** Using CSS `backdrop-filter: blur()`, the webpage gently blurs out, hiding distracting content and forcing a sensory "reset" until the user refocuses.
-*   **Zero-Latency Bridge:** Uses `chrome.runtime` messaging to communicate focus states between the Side Panel AI and the Content Script with <50ms latency.
+AttentionOS solves this by interpreting your **biometric presence** in real-time. It doesn't just know what tab is open—it knows if you are actually paying attention to it.
 
 ---
 
-## 💻 Tech Stack
-*   **Frontend:** Next.js 14, TypeScript, Tailwind CSS.
-*   **State Management:** Zustand (for persistence and shared UI state).
-*   **AI Engine:** Google MediaPipe (FaceLandmarker Task) via WebAssembly.
-*   **Extension Layer:** Manifest V3, Chrome SidePanel API.
-*   **Icons/Design:** Glassmorphism, Neon-Aesthetics, custom SVG iconography.
+## 🚀 The 3 Core Modules
+
+### 1. StealthHide (Privacy & Security)
+*The end of shoulder surfing.*
+In open-plan offices or public cafes, sensitive information (like banking portals or proprietary codebases) is constantly at risk. StealthHide provides **proactive, presence-based security**. 
+By utilizing Face Detection and 3D Head Alignment data, StealthHide instantly blurs your screen the exact millisecond you look away or step out of frame. Your data is masked before you even realize you've been distracted.
+
+### 2. Smart Media Pause (E-Learning & Productivity)
+*Never miss a second of your lecture again.*
+Distance learning and long tutorials require intense focus. If you're watching a video on YouTube or Coursera and you glance down at your phone, AttentionOS automatically pauses the video. 
+When you look back, it **automatically rewinds by 5 seconds** and resumes playing, ensuring you seamlessly catch what you missed without having to fumble for the keyboard.
+
+### 3. Flow State Dashboard (Analytics)
+*Quantify your deep work.*
+You can't improve what you don't measure. AttentionOS logs your genuine "focus intervals" instead of just tracking screen time. A beautiful, Next.js-powered UI visualizes your deep work sessions over time, helping you identify your most productive hours. All analytics and logs are stored 100% locally in your browser to maintain total privacy.
 
 ---
 
-## 🔒 Privacy First
-AttentionOS is built on the principle of **Zero-Server AI**.
-*   **Local Processing:** All biometric data is processed on the user's device. 
-*   **No Data Storage:** Camera frames are analyzed in-memory and immediately discarded.
-*   **Extension Security:** No external scripts or CDNs are used in the production build, ensuring a 100% secure, offline-capable experience.
+## 🛠️ Technical Architecture: The Manifest V3 "Sandbox DMZ"
+
+AttentionOS is built with **Next.js 14, TypeScript, Zustand, and WebAssembly (WASM)**. It represents a major engineering achievement in navigating Google's strict Chrome Manifest V3 (MV3) security restrictions.
+
+### The Challenge
+Manifest V3 heavily restricts remote code execution and blocks `eval()`, making traditional AI/ML implementations inside Chrome Extensions incredibly difficult.
+
+### The Solution: Zero-Server, Edge-AI Security
+We engineered a custom **WebAssembly-accelerated MediaPipe FaceLandmarker engine**. 
+Instead of relying on sandboxed iframes or external backends, we run the entire biometric pipeline locally within a dedicated **Side Panel DMZ Origin**.
+
+*   **100% Local Inference:** The camera feed is analyzed in RAM at 30 FPS and discarded instantly. Absolutely no video or biometric data is ever sent to a server.
+*   **Shadow DOM Injection:** To manipulate host webpages (like pausing videos or blurring the DOM), we inject highly-optimized Content Scripts that communicate with the Side Panel via lightning-fast `chrome.runtime` messaging.
+*   **State Management:** Zustand manages the complex biometric state tree across the React frontend, enabling ultra-responsive UI updates free of latency.
 
 ---
 
-## 🛠️ Build & Installation
-1.  **Clone the Repo:** `git clone ...`
-2.  **Install Dependencies:** `npm install`
-3.  **Build:** `npm run build:extension`
-4.  **Load in Chrome:** Navigate to `chrome://extensions`, enable Dev Mode, and "Load Unpacked" the `out/` folder.
+## 🏁 How to Run Locally
 
----
-
-**Developed for Impetus 2026 (INC '26)**
-*Pushing the boundaries of Edge-AI and Browser Security.*
+1. Clone the repository.
+2. Run `npm install` inside the `frontend` directory.
+3. Run `npm run build:extension` to generate the production extension bundle.
+4. Open Chrome, go to `chrome://extensions/`, enable **Developer mode**, and select **Load unpacked**. Choose the `frontend/out` folder.
+5. Open the Side Panel in Chrome and grant camera permissions to activate AttentionOS.

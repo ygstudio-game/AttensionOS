@@ -132,7 +132,9 @@ export default function FocusLensPage() {
                         headAligned: false,
                         gazePosition: undefined,
                         saccadeDetected: false,
-                        fixationDuration: 0
+                        fixationDuration: 0,
+                        multipleFacesDetected: false,
+                        isBlinking: false
                       });
                     }
                     lastUpdateTime = now;

@@ -18,9 +18,19 @@ class FogOfWar {
 
   init() {
     // Listen for messages from the Side Panel / Background
+    this.wasAutoPaused = false;
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.type === 'UPDATE_FOCUS_STATE') {
-        this.updateState(message.isFocused);
+        // Handle Screen Blur Overlay (FocusLens + BlinkSecure logic computed in Side Panel)
+        if (message.shouldBlur !== undefined) {
+          // updateState(true) means NOT blurred (focused), updateState(false) means BLURRED (distracted/unauthorized)
+          this.updateState(!message.shouldBlur);
+        }
+
+        // Handle Smart Media Pause
+        if (message.isSmartMediaPauseEnabled) {
+          this.handleSmartMediaPause(message.isFocused, message.smartMediaRewindAmount);
+        }
       }
     });
 
@@ -113,6 +123,29 @@ class FogOfWar {
     } else {
       blurElement.classList.add('active');
     }
+  }
+
+  handleSmartMediaPause(isFocused, rewindAmount = 5) {
+    const videoElements = document.querySelectorAll('video');
+    videoElements.forEach(video => {
+      if (!isFocused && !video.paused) {
+        // User looked away -> Pause the video
+        video.pause();
+        this.wasAutoPaused = true;
+        console.log("AttentionOS: Video paused due to distraction.");
+      } 
+      else if (isFocused && this.wasAutoPaused) {
+        // User looked back -> Rewind dynamically and play
+        if (rewindAmount > 0) {
+          video.currentTime = Math.max(0, video.currentTime - rewindAmount);
+          console.log(`AttentionOS: Focus regained. Rewound ${rewindAmount}s and playing.`);
+        } else {
+          console.log("AttentionOS: Focus regained. Playing without rewind.");
+        }
+        video.play();
+        this.wasAutoPaused = false;
+      }
+    });
   }
 
   observeNavigation() {
